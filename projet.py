@@ -1,10 +1,8 @@
 # Importation des bibliothèques nécessaires
 from tensorflow.keras.datasets import mnist
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, BatchNormalization
+from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D
 from tensorflow.keras.utils import to_categorical
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.callbacks import ReduceLROnPlateau, EarlyStopping
 
 # Chargement des données MNIST
 (X_train, y_train), (X_test, y_test) = mnist.load_data()
@@ -29,12 +27,14 @@ def larger_model():
     
     # Première couche de convolution avec 30 filtres de taille 5x5 et activation ReLU
     model.add(Conv2D(30, (5, 5), input_shape=(28, 28, 1), activation='relu'))
-    model.add(BatchNormalization())
+    
+    # Première couche de pooling (réduction de dimension) avec un pooling max
     model.add(MaxPooling2D())
     
     # Deuxième couche de convolution avec 15 filtres de taille 3x3 et activation ReLU
     model.add(Conv2D(15, (3, 3), activation='relu'))
-    model.add(BatchNormalization())
+    
+    # Deuxième couche de pooling
     model.add(MaxPooling2D())
     
     # Ajout de dropout pour éviter le surapprentissage
@@ -60,24 +60,8 @@ def larger_model():
 # Construction du modèle
 model = larger_model()
 
-# Utilisation de ImageDataGenerator pour l'augmentation des données
-datagen = ImageDataGenerator(
-    rotation_range=10,
-    zoom_range=0.1,
-    width_shift_range=0.1,
-    height_shift_range=0.1
-)
-datagen.fit(X_train)
-
-# Callbacks pour l'entraînement
-lr_reduction = ReduceLROnPlateau(monitor='val_loss', patience=3, factor=0.5, min_lr=0.00001)
-early_stopping = EarlyStopping(monitor='val_loss', patience=5)
-
 # Entraînement du modèle sur les données d'entraînement avec validation sur les données de test
-model.fit(datagen.flow(X_train, y_train, batch_size=200), 
-          validation_data=(X_test, y_test), 
-          epochs=10, 
-          callbacks=[lr_reduction, early_stopping])
+model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=10, batch_size=200)
 
 # Sauvegarde du modèle entraîné
 model.save('final_model.h5')
